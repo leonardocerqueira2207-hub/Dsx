@@ -2,6 +2,7 @@
 dayjs.extend(window.dayjs_plugin_isoWeek);
 dayjs.extend(window.dayjs_plugin_customParseFormat);
 
+
 // --- Storage helpers ---
 const LS_KEY = "podas_registros_v1";
 function loadRegistros(){ try{ const raw=localStorage.getItem(LS_KEY); if(!raw) return []; const arr=JSON.parse(raw); return Array.isArray(arr)?arr:[] }catch(e){ console.error("Erro ao carregar registros:", e); return [] } }
