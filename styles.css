@@ -1,12 +1,12 @@
 /* DSX Energia — Light theme (lime + white) */
 :root{
-  --bg:#0d1b2a;       /* fundo azul bem escuro */
-  --card:#1b263b;     /* cartões/painéis */
-  --ink:#e0e1dd;      /* texto principal (quase branco) */
-  --muted:#778da9;    /* textos secundários */
-  --line:#415a77;     /* bordas/linhas */
-  --lime:#1f7aff;     /* cor de destaque (botões) */
-  --lime-ink:#ffffff; /* cor do texto dentro do botão azul */
+  --bg:#f0f4f8;       /* fundo da página, azul bem clarinho */
+  --card:#ffffff;     /* cartões/painéis brancos */
+  --ink:#1e2a38;      /* texto principal: azul grafite */
+  --muted:#6b7b8c;    /* texto secundário/cinza-azulado */
+  --line:#d0d7e2;     /* linhas/bordas */
+  --lime:#2d6cdf;     /* azul médio para botões/destaques */
+  --lime-ink:#ffffff; /* texto branco dentro do botão */
 }
 
 *{box-sizing:border-box} html,body{margin:0;padding:0;height:100%} body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink)}
