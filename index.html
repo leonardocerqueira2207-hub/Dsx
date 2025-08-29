@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DSX Energia — Gestão de Poda & Espaçadores</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.11/dayjs.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.11/plugin/isoWeek.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.11/plugin/customParseFormat.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
+  <script defer src="script.js"></script>
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-logo">DSX</div>
+        <h1>DSX Energia — Gestão de Poda & Espaçadores</h1>
+      </div>
+      <div class="user-controls">
+        <div class="chip">
+          <label for="empresaSel">Empresa</label>
+          <select id="empresaSel">
+            <option value="EMS">EMS</option>
+            <option value="ESS">ESS</option>
+          </select>
+        </div>
+        <div class="chip">
+          <label for="mesSel">Mês</label>
+          <select id="mesSel"></select>
+        </div>
+        <div class="chip">
+          <label for="anoSel">Ano</label>
+          <select id="anoSel"></select>
+        </div>
+        <div class="chip" id="perfilChip"></div>
+        <button id="sairBtn" class="btn ghost">Sair</button>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="cards">
+        <div class="card kpi">
+          <div class="card-title">Total do mês — Poda</div>
+          <div class="card-value" id="kpiPoda">0</div>
+        </div>
+        <div class="card kpi">
+          <div class="card-title">Total do mês — Espaçador</div>
+          <div class="card-value" id="kpiEspacador">0</div>
+        </div>
+        <div class="card kpi">
+          <div class="card-title">Média diária (mês)</div>
+          <div class="card-value" id="kpiMedia">0</div>
+        </div>
+      </section>
+
+      <section class="actions">
+        <button class="btn primary" id="novoBtn">Novo Registro</button>
+        <button class="btn" id="consultarBtn">Consultar Registros</button>
+        <button class="btn" id="dashboardBtn">Dashboard Executivo</button>
+        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none" />
+        <button class="btn" id="importarBtn">Importar Excel/CSV</button>
+        <button class="btn" id="exportarBtn">Exportar CSV</button>
+      </section>
+
+      <!-- Tela: Novo Registro -->
+      <section id="telaNovo" class="panel hidden">
+        <h2>Novo Registro</h2>
+        <form id="formRegistro" class="form-grid">
+          <div class="fld">
+            <label for="dataRegistro">Data do Registro</label>
+            <input type="date" id="dataRegistro" required />
+          </div>
+          <div class="fld">
+            <label for="tipo">Tipo</label>
+            <select id="tipo" required>
+              <option value="Poda de Árvore">Poda de Árvore</option>
+              <option value="Instalação de Espaçador">Instalação de Espaçador</option>
+            </select>
+          </div>
+          <div class="fld">
+            <label for="quantidade">Quantidade</label>
+            <input type="number" id="quantidade" min="0" step="1" required />
+          </div>
+          <div class="fld grid-full">
+            <label for="observacoes">Observações</label>
+            <textarea id="observacoes" rows="3" placeholder="Opcional"></textarea>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn primary">Salvar</button>
+            <button type="button" id="cancelarNovo" class="btn ghost">Cancelar</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Tela: Consultar Registros -->
+      <section id="telaConsultar" class="panel hidden">
+        <h2>Consultar Registros</h2>
+        <div class="table-tools">
+          <div class="fld">
+            <label for="filtroDe">De</label>
+            <input type="date" id="filtroDe" />
+          </div>
+          <div class="fld">
+            <label for="filtroAte">Até</label>
+            <input type="date" id="filtroAte" />
+          </div>
+          <div class="fld">
+            <label for="filtroTipo">Tipo</label>
+            <select id="filtroTipo">
+              <option value="">Todos</option>
+              <option value="Poda de Árvore">Poda de Árvore</option>
+              <option value="Instalação de Espaçador">Instalação de Espaçador</option>
+            </select>
+          </div>
+          <button class="btn" id="aplicarFiltro">Aplicar</button>
+          <button class="btn ghost" id="limparFiltro">Limpar</button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Tipo</th>
+                <th>Quantidade</th>
+                <th>Observações</th>
+                <th class="acoes-col">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyRegistros">
+              <!-- linhas dinâmicas -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Tela: Dashboard -->
+      <section id="telaDashboard" class="panel hidden">
+        <h2>Dashboard Executivo</h2>
+        <div class="chart-card">
+          <h3>Totais por dia (mês selecionado)</h3>
+          <canvas id="chartDia"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>Totais por tipo (mês selecionado)</h3>
+          <canvas id="chartTipo"></canvas>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Diálogo de login -->
+  <div id="loginOverlay" class="overlay">
+    <div class="login-card">
+      <h2>Acessar</h2>
+      <div class="fld">
+        <label for="empresaLogin">Empresa</label>
+        <select id="empresaLogin">
+          <option value="EMS">EMS</option>
+          <option value="ESS">ESS</option>
+        </select>
+      </div>
+      <div class="fld">
+        <label for="perfilLogin">Perfil</label>
+        <select id="perfilLogin">
+          <option value="Operador">Operador</option>
+          <option value="Gestor">Gestor</option>
+        </select>
+      </div>
+      <div class="fld" id="senhaFld" style="display:none">
+        <label for="senhaLogin">Senha do Gestor</label>
+        <input type="password" id="senhaLogin" placeholder="Digite a senha do gestor" />
+      </div>
+      <button id="entrarBtn" class="btn primary full">Entrar</button>
+      <p class="hint">Senha do Gestor (padrão): <strong>Leonardo123</strong>.</p>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+</body>
+</html>
