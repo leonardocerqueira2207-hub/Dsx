@@ -22,11 +22,19 @@ const kpiPoda=document.getElementById("kpiPoda");
 const kpiEspacador=document.getElementById("kpiEspacador");
 const kpiMedia=document.getElementById("kpiMedia");
 
-const novoBtn=document.getElementById("novoBtn");
-const consultarBtn=document.getElementById("consultarBtn");
-const dashboardBtn=document.getElementById("dashboardBtn");
-const importarBtn=document.getElementById("importarBtn");
-const exportarBtn=document.getElementById("exportarBtn");
+// --- controle de visibilidade por perfil ---
+if(perfil === "Operador"){
+  // Operador só pode ver Consultar e Dashboard
+  novoBtn.style.display = "none";
+  importarBtn.style.display = "none";
+  exportarBtn.style.display = "none";
+} else {
+  // Gestor vê tudo
+  novoBtn.style.display = "";
+  importarBtn.style.display = "";
+  exportarBtn.style.display = "";
+}
+
 const fileInput=document.getElementById("fileInput");
 
 const telaNovo=document.getElementById("telaNovo");
