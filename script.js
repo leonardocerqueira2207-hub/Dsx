@@ -22,19 +22,11 @@ const kpiPoda=document.getElementById("kpiPoda");
 const kpiEspacador=document.getElementById("kpiEspacador");
 const kpiMedia=document.getElementById("kpiMedia");
 
-// --- controle de visibilidade por perfil ---
-if(perfil === "Operador"){
-  // Operador só pode ver Consultar e Dashboard
-  novoBtn.style.display = "none";
-  importarBtn.style.display = "none";
-  exportarBtn.style.display = "none";
-} else {
-  // Gestor vê tudo
-  novoBtn.style.display = "";
-  importarBtn.style.display = "";
-  exportarBtn.style.display = "";
-}
-
+const novoBtn=document.getElementById("novoBtn");
+const consultarBtn=document.getElementById("consultarBtn");
+const dashboardBtn=document.getElementById("dashboardBtn");
+const importarBtn=document.getElementById("importarBtn");
+const exportarBtn=document.getElementById("exportarBtn");
 const fileInput=document.getElementById("fileInput");
 
 const telaNovo=document.getElementById("telaNovo");
@@ -67,13 +59,39 @@ let chartDia, chartTipo;
 
 // --- Helpers UI ---
 function showToast(msg){ toast.textContent=msg; toast.classList.add("show"); setTimeout(()=>toast.classList.remove("show"),2000); }
-function setPanel(panel){ [telaNovo,telaConsultar,telaDashboard].forEach(p=>p.classList.add("hidden")); if(panel==="novo")telaNovo.classList.remove("hidden"); if(panel==="consultar")telaConsultar.classList.remove("hidden"); if(panel==="dashboard")telaDashboard.classList.remove("hidden"); }
+function setPanel(panel){
+  [telaNovo,telaConsultar,telaDashboard].forEach(p=>p.classList.add("hidden"));
+  if(panel==="novo")telaNovo.classList.remove("hidden");
+  if(panel==="consultar")telaConsultar.classList.remove("hidden");
+  if(panel==="dashboard")telaDashboard.classList.remove("hidden");
+}
 function refreshSelects(){
   const meses=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
   mesSel.innerHTML=meses.map((m,idx)=>`<option value="${idx}">${m}</option>`).join(""); mesSel.value=state.mes;
   const y=dayjs().year(); const anos=Array.from({length:11},(_,i)=>y-5+i);
   anoSel.innerHTML=anos.map(a=>`<option value="${a}">${a}</option>`).join(""); anoSel.value=state.ano;
   empresaSel.value=state.empresa; perfilChip.textContent=`Perfil: ${state.perfil}`;
+}
+
+// destaca graficamente o que Operador pode ver
+function applyVisibilityByPerfil(){
+  if(state.perfil === "Operador"){
+    // Operador só vê Consultar e Dashboard
+    novoBtn.style.display = "none";
+    importarBtn.style.display = "none";
+    exportarBtn.style.display = "none";
+    // Garantir que, ao entrar como Operador, não fique preso na tela "Novo"
+    if(!telaConsultar.classList.contains("hidden") || !telaDashboard.classList.contains("hidden")){
+      // ok
+    } else {
+      setPanel("consultar");
+    }
+  } else {
+    // Gestor vê tudo
+    novoBtn.style.display = "";
+    importarBtn.style.display = "";
+    exportarBtn.style.display = "";
+  }
 }
 
 function summarize(regs){
@@ -153,7 +171,7 @@ function parseCSV(text){
     rows.push({
       data:dayjs(cols[idxData]?.trim(),["YYYY-MM-DD","DD/MM/YYYY","D/M/YYYY"]).format("YYYY-MM-DD"),
       tipo:(cols[idxTipo]||"").trim()||"Poda de Árvore",
-      quantidade:Number((cols[idxQtd]||"0").toString().replace(",",".")),
+      quantidade:Number((cols[idxQtd]||"0").toString().replace(",", ".")),
       observacoes:(cols[idxObs]||"").trim(),
     });
   }
@@ -180,7 +198,7 @@ function handleFile(file){
         return {
           data:dayjs(String(d).trim(),["YYYY-MM-DD","DD/MM/YYYY","D/M/YYYY"]).format("YYYY-MM-DD"),
           tipo:(t||"Poda de Árvore").toString().trim(),
-          quantidade:Number(String(q).replace(",","."))||0,
+          quantidade:Number(String(q).replace(",", "."))||0,
           observacoes:(o||"").toString().trim(),
         };
       });
@@ -234,7 +252,13 @@ function seedIfEmpty(){
   const out=sample.map(s=>({ id:uid(), empresa:"EMS", ...s }));
   saveRegistros(out);
 }
-function updateAll(){ const regs=loadRegistros(); summarize(regs); if(!telaConsultar.classList.contains("hidden")) renderTabela(); if(!telaDashboard.classList.contains("hidden")) rebuildCharts(); }
+function updateAll(){
+  const regs=loadRegistros();
+  summarize(regs);
+  if(!telaConsultar.classList.contains("hidden")) renderTabela();
+  if(!telaDashboard.classList.contains("hidden")) rebuildCharts();
+  applyVisibilityByPerfil(); // garante visibilidade correta a cada update
+}
 
 // --- Events ---
 empresaSel.addEventListener("change",()=>{ state.empresa=empresaSel.value; updateAll(); });
@@ -242,7 +266,7 @@ mesSel.addEventListener("change",()=>{ state.mes=Number(mesSel.value); updateAll
 anoSel.addEventListener("change",()=>{ state.ano=Number(anoSel.value); updateAll(); });
 sairBtn.addEventListener("click",()=>{ loginOverlay.style.display="flex"; });
 
-novoBtn.addEventListener("click",()=>{ if(state.perfil!=="Operador" && state.perfil!=="Gestor") return; setPanel("novo"); });
+novoBtn.addEventListener("click",()=>{ if(state.perfil!=="Gestor") return; setPanel("novo"); });
 consultarBtn.addEventListener("click",()=>{ setPanel("consultar"); renderTabela(); });
 dashboardBtn.addEventListener("click",()=>{ setPanel("dashboard"); rebuildCharts(); });
 
@@ -250,27 +274,37 @@ importarBtn.addEventListener("click",()=>{ if(state.perfil!=="Gestor"){ showToas
 fileInput.addEventListener("change",(e)=>{ if(!e.target.files?.length) return; handleFile(e.target.files[0]); fileInput.value=""; });
 exportarBtn.addEventListener("click",()=>{ if(state.perfil!=="Gestor"){ showToast("Apenas Gestor pode exportar."); return; } exportCSV(); });
 
-formRegistro.addEventListener("submit",(e)=>{
-  e.preventDefault();
-  if(state.perfil==="Operador" || state.perfil==="Gestor"){
-    const payload={ data:dataRegistro.value, tipo:tipo.value, quantidade:Number(quantidade.value||0), observacoes:observacoes.value.trim() };
-    if(state.editId){ updateRegistro(payload); } else { addRegistro(payload); }
-    formRegistro.reset(); setPanel(null); rebuildCharts(); renderTabela();
-  }else{
-    showToast("Faça login para registrar.");
-  }
+// --- Login & Perfil ---
+perfilLogin.addEventListener("change",()=>{
+  senhaFld.style.display = perfilLogin.value==="Gestor" ? "flex" : "none";
 });
-cancelarNovo.addEventListener("click",()=>{ state.editId=null; formRegistro.reset(); setPanel(null); });
 
-aplicarFiltro.addEventListener("click",renderTabela);
-limparFiltro.addEventListener("click",()=>{ filtroDe.value=""; filtroAte.value=""; filtroTipo.value=""; renderTabela(); });
-
-perfilLogin.addEventListener("change",()=>{ senhaFld.style.display = perfilLogin.value==="Gestor" ? "flex" : "none"; });
 entrarBtn.addEventListener("click",()=>{
-  const empresa=empresaLogin.value; const perfil=perfilLogin.value;
-  if(perfil==="Gestor"){ if(senhaLogin.value!=="Leonardo123"){ showToast("Senha do Gestor incorreta."); return; } }
-  state.empresa=empresa; state.perfil=perfil;
-  refreshSelects(); updateAll(); loginOverlay.style.display="none"; showToast(`Bem-vindo, ${perfil}!`);
+  const empresa=empresaLogin.value;
+  const perfil=perfilLogin.value;
+
+  if(perfil==="Gestor"){
+    if(senhaLogin.value!=="Leonardo123"){
+      showToast("Senha do Gestor incorreta.");
+      return;
+    }
+  }
+
+  state.empresa=empresa;
+  state.perfil=perfil;
+
+  refreshSelects();
+  updateAll();
+  loginOverlay.style.display="none";
+  showToast(`Bem-vindo, ${perfil}!`);
+
+  // --- controle de visibilidade por perfil ---
+  applyVisibilityByPerfil();
 });
 
-(function init(){ seedIfEmpty(); refreshSelects(); updateAll(); })();
+// --- Init ---
+(function init(){
+  seedIfEmpty();
+  refreshSelects();
+  updateAll();
+})();
